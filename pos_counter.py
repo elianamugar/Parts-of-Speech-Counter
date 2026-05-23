@@ -1,75 +1,95 @@
-#requires download of NLTK in Python
-import os
+"""
+Count broad part-of-speech categories in .txt files.
+
+This script uses NLTK to tokenize and POS-tag text files, then counts
+selected categories such as nouns, verbs, adjectives, adverbs, pronouns,
+prepositions, and proper nouns.
+"""
+
+from collections import Counter
+from pathlib import Path
+
 import nltk
-from nltk.corpus import *
-import string
+
+
+POS_CATEGORIES = {
+    "Adjectives": {"JJ", "JJR", "JJS"},
+    "Nouns": {"NN", "NNS"},
+    "Prepositions": {"IN"},
+    "Proper Nouns": {"NNP", "NNPS"},
+    "Personal Pronouns": {"PRP"},
+    "Possessive Pronouns": {"PRP$"},
+    "Adverbs": {"RB", "RBR", "RBS"},
+    "Verbs": {"VB", "VBD", "VBG", "VBN", "VBP", "VBZ"},
+}
+
+
+def count_pos_categories(text):
+    """Tokenize text and count broad POS categories."""
+    tokens = nltk.word_tokenize(text)
+    tagged_tokens = nltk.pos_tag(tokens)
+
+    counts = Counter()
+
+    for word, tag in tagged_tokens:
+        for category, tag_set in POS_CATEGORIES.items():
+            if tag in tag_set:
+                counts[category] += 1
+                break
+
+        if word.lower() == "chad":
+            counts["Chads"] += 1
+
+    return counts
+
+
+def analyze_file(file_path):
+    """Analyze one text file."""
+    text = file_path.read_text(encoding="utf-8")
+    return count_pos_categories(text)
+
+
+def format_results(file_path, counts):
+    """Format POS counts for one file."""
+    lines = [f"File: {file_path.name}"]
+
+    for category in POS_CATEGORIES:
+        lines.append(f"{category}: {counts.get(category, 0)}")
+
+    lines.append(f"Chads: {counts.get('Chads', 0)}")
+
+    return "\n".join(lines)
+
+
+def analyze_directory(input_dir):
+    """Analyze every .txt file in a directory."""
+    results = []
+
+    for file_path in sorted(input_dir.glob("*.txt")):
+        counts = analyze_file(file_path)
+        results.append(format_results(file_path, counts))
+
+    return "\n\n".join(results)
+
 
 def main():
-    # modify path for where files are on machine
-    path = "/Users/EMWork/Desktop/Boston University/EVL/Map Lemon Analysis/Participant Texts/Men"
-    for text_file in os.listdir(path):
-        if '.txt' in text_file:
-            print("We are in " + text_file)
-            THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
-            my_file = os.path.join(THIS_FOLDER, text_file)
-            f = open(my_file, 'r+')
-            raw = f.read()
+    """Run the POS counter."""
+    input_dir = Path(input("Enter folder path containing .txt files: ").strip())
+    output_file = Path(input("Enter output filename, e.g. pos_counts.txt: ").strip())
 
-            # tags all words with corresponding part-of-speech in user's text file choice
-            tokens = nltk.word_tokenize(raw)
-            tagged_corpus = nltk.pos_tag(tokens)
-            update_corpus = ""
+    if not input_dir.exists() or not input_dir.is_dir():
+        print("Error: input folder does not exist.")
+        return
 
-            count_adj = 0
-            count_noun = 0
-            count_prep = 0
-            count_propnoun = 0
-            count_prpnoun = 0
-            count_prpsnoun = 0
-            count_adv = 0
-            count_verb = 0
-            count_chad = 0
+    results = analyze_directory(input_dir)
 
-            for i in range(len(tagged_corpus)):
-                if (str.lower(tagged_corpus[i][0]) == 'chad'):
-                    count_chad += 1
-                if ('JJ' in tagged_corpus[i]) or ('JJR' in tagged_corpus[i]) or ('JJS' in tagged_corpus[i]):
-                    count_adj += 1
-                elif ('NN' in tagged_corpus[i]) or ('NNS' in tagged_corpus[i]):
-                    count_noun += 1
-                elif ('IN' in tagged_corpus[i]):
-                    count_prep += 1
-                elif ('NNP' in tagged_corpus[i]) or ('NNPS' in tagged_corpus[i]):
-                    count_propnoun += 1
-                elif ('PRP' in tagged_corpus[i]):
-                    count_prpnoun += 1
-                elif ('PRP$' in tagged_corpus[i]):
-                    count_prpsnoun += 1
-                elif ('RB' in tagged_corpus[i]) or ('RBR' in tagged_corpus[i]) or ('RBS' in tagged_corpus[i]):
-                    count_adv += 1
-                elif ('VB' in tagged_corpus[i]) or ('VBD' in tagged_corpus[i]) or ('VBG' in tagged_corpus[i]) or ('VBN' in tagged_corpus[i]) or ('VBP' in tagged_corpus[i]) or ('VBZ' in tagged_corpus[i]):
-                    count_verb += 1
+    if not results:
+        print("No .txt files found in the selected folder.")
+        return
 
-            update_corpus += "Adjectives: " + str(count_adj) + "\n" + \
-                "Nouns: " + str(count_noun) + "\n" + \
-                    "Prepositions: " + str(count_prep) + "\n" + \
-                        "Proper Nouns: " + str(count_propnoun) + "\n" + \
-                            "Personal Pronouns: " + str(count_prpnoun) + "\n" + \
-                                "Possessive Pronouns: " + str(count_prpsnoun) + "\n" + \
-                                    "Adverbs: " + str(count_adv) + "\n" + \
-                                        "Verbs: " + str(count_verb) + "\n" + \
-                                            "Chads: " + str(count_chad)
+    output_file.write_text(results, encoding="utf-8")
+    print(f"Saved POS counts to {output_file}")
 
-            f = open(str(input("Enter filename for which you want the data text to be exported (with .txt): \n")), "w")
-            f.write(update_corpus)
 
-while True:
-    answer = input("Run the 'POS Counter ML' program? (y/n): ")
-    if answer not in ('y', 'n'):
-        print("Invalid input.")
-        break
-    if answer == 'y':
-        main()
-    else:
-        print("Goodbye.")
-        break
+if __name__ == "__main__":
+    main()

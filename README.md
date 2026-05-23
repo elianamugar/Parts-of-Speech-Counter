@@ -1,6 +1,6 @@
 # Parts of Speech Counter
 
-A Python text-analysis tool for counting broad part-of-speech categories across `.txt` files.
+A Python text-analysis tool for counting broad part-of-speech categories across `.txt` files. Initially created for EVL's MapLemon Corpus project.
 
 ## Overview
 
